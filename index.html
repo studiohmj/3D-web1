@@ -364,6 +364,10 @@ body.blue-theme {
 .berry { scale: 1; transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), scale 0.3s ease; }
 body.blue-theme .berry { scale: 0.5; }
 
+/* Floating fruit is decoration: never let it catch a tap meant for a card or button */
+.berry, .leaf { pointer-events: none !important; }
+
+
 .b1 { top: 25%; left: 30%; width: 220px; height: 220px; }
 .b2 { top: 60%; left: 42%; width: 100px; height: 100px; }
 .b3 { top: 30%; left: 62%; width: 250px; height: 250px; }
@@ -491,6 +495,39 @@ body.blue-theme .berry { scale: 0.5; }
     .side-title { align-self: center; text-align: center; }
 }
 
+
+/* ---------- Phones: one column, dragon between the headline and the flavors ---------- */
+@media (max-width: 768px) {
+    html, body { overflow-x: hidden; }
+    body { overflow-y: auto; height: auto; }
+    .header { position: absolute; padding: 1rem max(16px, 5%); }
+    .nav { display: none; }
+    .logo { white-space: nowrap; font-size: 1.1rem; }
+    .contact-btn { padding: 0.75rem 1.3rem; font-size: 0.8rem; }
+
+    .hero { overflow: hidden; height: auto; min-height: 100svh; padding: 5.5rem max(16px, 5%) 2.5rem; align-items: flex-start; }
+    .hero-content { flex-direction: column; height: auto; align-items: stretch; padding: 0; }
+
+    .hero-left { padding: 0.5rem 0 0; gap: 1rem; }
+    .main-title { font-size: clamp(3.6rem, 19vw, 5.2rem); }
+    .description { font-size: 0.95rem; max-width: 22rem; }
+    .description br { display: none; }
+    .award-badge { display: none; }
+
+    .hero-center { order: 0; position: relative; height: 40svh; min-height: 260px; margin: 0.5rem 0; }
+    .main-product-3d { width: 100vw; height: 100%; top: 0; left: calc(50% - 50vw); }
+
+    .hero-right { width: 100%; padding: 0; align-items: center; text-align: center; }
+    .product-carousel { align-items: center; }
+    .carousel-cards { padding-top: 3.5rem; }
+    .card { width: 140px; }
+    .card img { width: 130px; margin-top: -6.5rem; }
+    .side-title { display: none; }
+
+    .berry { scale: 0.55; }
+    body.blue-theme .berry { scale: 0.28; }
+    .leaf { scale: 0.7; }
+}
 </style>
 </head>
 <body>
@@ -562,7 +599,7 @@ body.blue-theme .berry { scale: 0.5; }
 <div class="hero-center">
     <model-viewer id="product-model" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/DragonAttenuation/glTF-Binary/DragonAttenuation.glb" alt="Glass dragon 3D model" camera-controls
         disable-zoom shadow-intensity="0" environment-image="neutral" exposure="1.5"
-        interaction-prompt="none" camera-orbit="0deg 80deg 5.6m" camera-target="0m 0.5m 0m" field-of-view="30deg"
+        interaction-prompt="none" camera-orbit="0deg 80deg 8.3m" camera-target="0m 0.5m 0m" min-camera-orbit="auto auto 1m" max-camera-orbit="auto auto 20m" field-of-view="30deg"
         class="main-product-3d">
     </model-viewer>
 </div>
@@ -628,6 +665,7 @@ const allBerries = document.querySelectorAll('.berry');
 const cards = document.querySelectorAll('.card');
 let isSwitching = false;
 let switchSpin = 0;
+const phone = matchMedia('(max-width: 768px)');
 
 // Jelly: a springy hop that settles on an elastic ease (even scale only, so nothing stretches)
 const calmMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -639,6 +677,21 @@ function jiggle(power = 1) {
         .to(modelViewer, { y: 0, scale: 1, duration: 1.3, ease: 'elastic.out(1, 0.35)' });
 }
 modelViewer.addEventListener('load', () => setTimeout(() => jiggle(1), 900));
+
+customElements.whenDefined('model-viewer').then(() => {
+    document.querySelectorAll('.berry, .leaf').forEach(mv => {
+        const mute = () => {
+            if (!mv.shadowRoot || mv.shadowRoot.querySelector('style[data-mute]')) return;
+            const st = document.createElement('style');
+            st.dataset.mute = '';
+            st.textContent = '*, *::before, *::after { pointer-events: none !important; }';
+            mv.shadowRoot.appendChild(st);
+        };
+        mute();
+        requestAnimationFrame(mute);
+        mv.addEventListener('load', mute);
+    });
+});
 modelViewer.addEventListener('pointerdown', () => jiggle(1));
 let blueTexture = null;
 let greenTexture = null;
@@ -830,7 +883,7 @@ function animate() {
     currentMouse.y += (mouse.y - currentMouse.y) * 0.05;
 
     // Tilt the product can + add switch spin
-    modelViewer.cameraOrbit = `${(currentMouse.x * 40) + switchSpin}deg ${80 + (currentMouse.y * 20)}deg 5.6m`;
+    modelViewer.cameraOrbit = `${(currentMouse.x * 40) + switchSpin}deg ${80 + (currentMouse.y * 20)}deg ${phone.matches ? '7.5m' : '8.3m'}`;
 
     // Update parallax containers - Always
     berriesFG.style.transform = `translate(${currentMouse.x * 60}px, ${currentMouse.y * 60}px)`;
